@@ -1,0 +1,31 @@
+
+  [32m[1mVITE[22m v7.3.2[39m  [2mready in [0m[1m1712[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m8:02:42 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/History.tsx, /src/react-app/pages/Dashboard.tsx, /src/react-app/pages/PhotoChecker.tsx[22m
+[2m8:03:01 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:29:00 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:29:10 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/History.tsx, /src/react-app/index.css[22m
+[2m10:29:12 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/Dashboard.tsx, /src/react-app/index.css[22m
+[2m10:38:34 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/History.tsx, /src/react-app/pages/Dashboard.tsx, /src/react-app/pages/PhotoChecker.tsx[22m
+[2m10:38:39 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:38:49 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:38:56 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:39:21 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:39:34 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
+[2m10:44:52 pm[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2m10:44:52 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m10:49:58 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/Home.tsx[22m
+[2m10:50:11 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/About.tsx[22m
+[2m10:50:44 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/PhotoChecker.tsx[22m
+[2m10:50:50 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/Dashboard.tsx[22m
+[2m10:50:54 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/History.tsx[22m
+[2m10:52:13 pm[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2m10:52:13 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m10:53:24 pm[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[2m10:53:24 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m10:58:14 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/PhotoChecker.tsx[22m
+[2m10:58:16 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/Home.tsx[22m
+[2m10:58:19 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/History.tsx[22m
+[2m10:58:22 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/Dashboard.tsx[22m
+[2m10:58:25 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/index.css, /src/react-app/pages/About.tsx[22m

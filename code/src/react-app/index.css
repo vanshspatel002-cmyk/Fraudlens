@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 40% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 40% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 100% 50%;
+    --primary-foreground: 222 47% 7%;
+    --secondary: 263 70% 56%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 263 70% 56%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 20%;
+    --input: 222 30% 18%;
+    --ring: 187 100% 50%;
+    --radius: 0.75rem;
+    --chart-1: 187 100% 50%;
+    --chart-2: 263 70% 56%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 0 84% 60%;
+    --success: 142 76% 36%;
+    --warning: 45 93% 47%;
+    --danger: 0 84% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 40% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 40% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 100% 50%;
+    --primary-foreground: 222 47% 7%;
+    --secondary: 263 70% 56%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 263 70% 56%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 20%;
+    --input: 222 30% 18%;
+    --ring: 187 100% 50%;
+    --chart-1: 187 100% 50%;
+    --chart-2: 263 70% 56%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 0 84% 60%;
+    --success: 142 76% 36%;
+    --warning: 45 93% 47%;
+    --danger: 0 84% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  }
+
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), 0 0 40px rgba(0, 212, 255, 0.1);
+  }
+  
+  .glow-violet {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.15), 0 0 40px rgba(124, 58, 237, 0.1);
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 to-violet-500 bg-clip-text text-transparent;
+  }
+}
