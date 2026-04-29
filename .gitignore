@@ -4,4 +4,10 @@ venv/
 __pycache__/
 uploads/
 .env
+backend/keys/
 *.json
+!package.json
+!package-lock.json
+!vercel.json
+!code/package.json
+!code/package-lock.json

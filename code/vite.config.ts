@@ -4,12 +4,16 @@ import react from "@vitejs/plugin-react";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { mochaPlugins } from "@getmocha/vite-plugins";
 
+const isVercel = process.env.VERCEL === "1";
+
 export default defineConfig({
-  plugins: [
-    ...mochaPlugins(process.env as Record<string, string>),
-    react(),
-    cloudflare(),
-  ],
+  plugins: isVercel
+    ? [react()]
+    : [
+        ...mochaPlugins(process.env as Record<string, string>),
+        react(),
+        cloudflare(),
+      ],
   server: {
     allowedHosts: true,
     proxy: {

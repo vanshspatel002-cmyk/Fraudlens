@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "build": "npm --prefix code run build",
+    "dev": "npm --prefix code run dev",
+    "lint": "npm --prefix code run lint",
+    "check": "npm --prefix code run check"
+  },
+  "dependencies": {
+    "framer-motion": "^12.38.0",
+    "react-circular-progressbar": "^2.2.0"
+  }
+}
