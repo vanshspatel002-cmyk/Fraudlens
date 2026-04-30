@@ -1,8 +1,0 @@
-[2m11:46:17 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Forced re-optimization of dependencies
-
-  [32m[1mVITE[22m v7.3.2[39m  [2mready in [0m[1m1411[22m[2m[0m ms[22m
-
-  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
-[2m11:47:52 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/Home.tsx, /src/react-app/index.css[22m
-[2m11:50:25 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/Home.tsx, /src/react-app/index.css[22m
-[2m11:56:57 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/react-app/pages/PhotoChecker.tsx, /src/react-app/index.css[22m
