@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-import requests
+try:
+    import requests
+    from requests import RequestException
+except ModuleNotFoundError:
+    requests = None
+    RequestException = Exception
 
 
 SERPAPI_ENDPOINT = "https://serpapi.com/search.json"
@@ -174,6 +179,10 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
         print("[reverse_search] Reverse search skipped (no key)")
         return dict(MISSING_KEY_RESPONSE)
 
+    if requests is None:
+        print("[reverse_search] Reverse search skipped (requests package missing)")
+        return fallback("Reverse image search unavailable (requests package missing).")
+
     if not image_url:
         print("[reverse_search] Reverse search skipped (no public image URL)")
         return fallback("Reverse image search unavailable (public image URL missing).")
@@ -203,7 +212,7 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
         )
         response.raise_for_status()
         payload = response.json()
-    except requests.RequestException as exc:
+    except RequestException as exc:
         print(f"[reverse_search] Reverse search failed: {exc}")
         return fallback("Reverse image search unavailable (SerpAPI request failed).")
     except ValueError as exc:
