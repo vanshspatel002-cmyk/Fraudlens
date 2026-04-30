@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+import json
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
 
 UNAVAILABLE_MESSAGE = "Google Vision unavailable"
+MISSING_CREDENTIALS_MESSAGE = "Google Vision credentials not configured."
 RENDER_CREDENTIALS_PATH = Path("/tmp/google_credentials.json")
 WATERMARK_KEYWORDS = (
     "shutterstock",
@@ -61,10 +64,10 @@ def load_local_env() -> None:
                 os.environ[key] = value
 
 
-def unavailable_result() -> dict[str, Any]:
+def unavailable_result(message: str = UNAVAILABLE_MESSAGE) -> dict[str, Any]:
     return {
         "available": False,
-        "message": UNAVAILABLE_MESSAGE,
+        "message": message,
         "labels": [],
         "logos": [],
         "ocrText": "",
@@ -84,26 +87,32 @@ def _configure_google_credentials() -> bool:
 
     if credentials_json:
         try:
+            parsed_credentials = json.loads(credentials_json)
             RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            RENDER_CREDENTIALS_PATH.write_text(credentials_json, encoding="utf-8")
+            RENDER_CREDENTIALS_PATH.write_text(
+                json.dumps(parsed_credentials),
+                encoding="utf-8",
+            )
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
+            print("Google Vision credentials loaded from GOOGLE_CREDENTIALS_JSON")
             return True
-        except OSError as exc:
-            print(f"[google_vision] Google Vision unavailable: could not prepare credentials file ({exc})")
+        except (json.JSONDecodeError, OSError):
+            print("Google Vision credentials missing")
             return False
 
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip().strip('"').strip("'")
 
     if not credentials_path:
-        print("[google_vision] Google Vision unavailable: credentials are not configured")
+        print("Google Vision credentials missing")
         return False
 
     expanded_path = Path(os.path.expandvars(credentials_path)).expanduser()
 
     if not expanded_path.is_file():
-        print("[google_vision] Google Vision unavailable: credentials file was not found")
+        print("Google Vision credentials missing")
         return False
 
+    print("Google Vision credentials loaded from GOOGLE_APPLICATION_CREDENTIALS")
     return True
 
 
@@ -230,7 +239,7 @@ def analyze_google_vision(image_path: str | Path) -> dict[str, Any]:
     print("[google_vision] Google Vision started")
 
     if not _configure_google_credentials():
-        return unavailable_result()
+        return unavailable_result(MISSING_CREDENTIALS_MESSAGE)
 
     try:
         from google.cloud import vision

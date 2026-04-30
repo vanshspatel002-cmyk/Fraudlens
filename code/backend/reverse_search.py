@@ -26,7 +26,7 @@ STOCK_SITE_KEYWORDS = (
 )
 MISSING_KEY_RESPONSE = {
     "available": False,
-    "message": "Reverse image search unavailable (API key missing).",
+    "message": "Reverse image search unavailable: API key missing.",
     "matchesFound": 0,
     "sources": [],
     "originalityScore": None,
@@ -60,9 +60,11 @@ def load_local_env() -> None:
 
 
 def fallback(message: str) -> dict[str, Any]:
+    reason = message.strip().rstrip(".")
+
     return {
         "available": False,
-        "message": message,
+        "message": f"Reverse image search unavailable: {reason}.",
         "matchesFound": 0,
         "sources": [],
         "originalityScore": None,
@@ -176,24 +178,24 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
     api_key = os.getenv("SERPAPI_KEY", "").strip()
 
     if not api_key:
-        print("[reverse_search] Reverse search skipped (no key)")
+        print("SERPAPI_KEY missing")
         return dict(MISSING_KEY_RESPONSE)
+
+    print("SERPAPI_KEY found")
 
     if requests is None:
         print("[reverse_search] Reverse search skipped (requests package missing)")
-        return fallback("Reverse image search unavailable (requests package missing).")
+        return fallback("requests package missing")
 
     if not image_url:
         print("[reverse_search] Reverse search skipped (no public image URL)")
-        return fallback("Reverse image search unavailable (public image URL missing).")
+        return fallback("public image URL missing")
 
     parsed_url = urlparse(image_url)
 
     if parsed_url.hostname in {"127.0.0.1", "localhost"}:
         print("[reverse_search] Reverse search skipped (image URL is local-only)")
-        return fallback(
-            "Reverse image search unavailable because the uploaded image URL is not publicly reachable."
-        )
+        return fallback("uploaded image URL is not publicly reachable")
 
     print("[reverse_search] Reverse search started")
 
@@ -210,20 +212,26 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
             },
             timeout=25,
         )
-        response.raise_for_status()
+        print(f"SerpAPI HTTP status code: {response.status_code}")
+
+        if not response.ok:
+            return fallback(f"SerpAPI request failed with HTTP {response.status_code}")
+
         payload = response.json()
-    except RequestException as exc:
-        print(f"[reverse_search] Reverse search failed: {exc}")
-        return fallback("Reverse image search unavailable (SerpAPI request failed).")
+    except RequestException:
+        print("[reverse_search] Reverse search failed: request exception")
+        return fallback("SerpAPI request failed")
     except ValueError as exc:
         print(f"[reverse_search] Reverse search failed: invalid JSON: {exc}")
-        return fallback("Reverse image search unavailable (invalid SerpAPI response).")
+        return fallback("invalid SerpAPI response")
 
     if payload.get("error"):
-        print(f"[reverse_search] Reverse search failed: {payload['error']}")
-        return fallback(f"Reverse image search unavailable ({payload['error']}).")
+        serpapi_error = str(payload["error"])
+        print(f"SerpAPI error message: {serpapi_error}")
+        return fallback(serpapi_error)
 
     result = parse_serpapi_results(payload)
+    print(f"SerpAPI matches parsed: {result['matchesFound']}")
     print(
         "[reverse_search] Reverse search complete: "
         f"matches={result['matchesFound']} stock={result['stockPhotoDetected']}"
