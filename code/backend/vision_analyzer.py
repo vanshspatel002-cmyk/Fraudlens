@@ -7,6 +7,7 @@ from typing import Any
 
 
 UNAVAILABLE_MESSAGE = "Google Vision unavailable"
+RENDER_CREDENTIALS_PATH = Path("/tmp/google_credentials.json")
 WATERMARK_KEYWORDS = (
     "shutterstock",
     "getty",
@@ -76,12 +77,25 @@ def unavailable_result() -> dict[str, Any]:
     }
 
 
-def _credentials_available() -> bool:
+def _configure_google_credentials() -> bool:
     load_local_env()
+
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
+
+    if credentials_json:
+        try:
+            RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            RENDER_CREDENTIALS_PATH.write_text(credentials_json, encoding="utf-8")
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
+            return True
+        except OSError as exc:
+            print(f"[google_vision] Google Vision unavailable: could not prepare credentials file ({exc})")
+            return False
+
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip().strip('"').strip("'")
 
     if not credentials_path:
-        print("[google_vision] Google Vision unavailable: GOOGLE_APPLICATION_CREDENTIALS is not set")
+        print("[google_vision] Google Vision unavailable: credentials are not configured")
         return False
 
     expanded_path = Path(os.path.expandvars(credentials_path)).expanduser()
@@ -215,7 +229,7 @@ def _safe_search(vision: Any, annotation: Any) -> dict[str, str]:
 def analyze_google_vision(image_path: str | Path) -> dict[str, Any]:
     print("[google_vision] Google Vision started")
 
-    if not _credentials_available():
+    if not _configure_google_credentials():
         return unavailable_result()
 
     try:
