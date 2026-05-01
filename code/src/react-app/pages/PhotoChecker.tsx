@@ -67,6 +67,16 @@ const MAX_UPLOAD_SIZE_MB = 10;
 const ACCEPTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"];
 const PDF_SAFE_TEXT_LIMIT = 110;
 
+function getApiBaseUrl() {
+  const apiUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL;
+
+  if (apiUrl) return apiUrl.replace(/\/$/, "");
+
+  return import.meta.env.PROD ? "" : "http://127.0.0.1:5000";
+}
+
 const intelligenceModules = [
   { label: "EXIF", icon: Database, tone: "text-cyan-300" },
   { label: "ELA", icon: Layers3, tone: "text-violet-300" },
@@ -112,7 +122,7 @@ function parseRecord(value: unknown) {
       typeof item === "boolean" ||
       item === null
     ) {
-      output[key] = item;
+      output[key] = item as number | string | boolean | null;
     }
   });
 
@@ -508,7 +518,8 @@ export default function PhotoChecker() {
       const formData = new FormData();
       formData.append("image", selectedFile, selectedFile.name);
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/analyze`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const res = await fetch(`${apiBaseUrl}/api/analyze`, {
         method: "POST",
         body: formData,
       });
@@ -745,7 +756,7 @@ export default function PhotoChecker() {
       align: "center",
     });
 
-    let previewY = 132;
+    const previewY = 132;
 
     if (selectedImage) {
       try {
@@ -1923,7 +1934,7 @@ export default function PhotoChecker() {
 
 function getAnalysisErrorMessage(error: Error) {
   if (error.message === "Failed to fetch") {
-    return "Could not reach the analysis backend. Start Flask or set VITE_API_URL to the backend URL.";
+    return "Could not reach the analysis backend. In production, configure the Vercel API proxy with BACKEND_API_URL or set VITE_API_URL to the Render backend URL.";
   }
 
   return error.message;

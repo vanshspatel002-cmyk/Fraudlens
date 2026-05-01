@@ -7,15 +7,39 @@ from flask import Flask, jsonify, request, send_from_directory, url_for
 from flask_cors import CORS
 from reverse_search import reverse_image_search
 from vision_analyzer import analyze_google_vision
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"}
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+
+
+def load_local_env() -> None:
+    for env_path in (BASE_DIR.parent / ".env", BASE_DIR.parent.parent / ".env"):
+        if not env_path.exists():
+            continue
+
+        for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            stripped = line.strip().lstrip("\ufeff")
+
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+
+            key, value = stripped.split("=", 1)
+            key = key.strip().lstrip("\ufeff")
+            value = value.strip().strip('"').strip("'")
+
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_local_env()
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -68,10 +92,30 @@ def frontend_payload(result):
     }
 
 
+def normalize_base_url(value: str) -> str:
+    value = value.strip().rstrip("/")
+
+    if value.endswith("/api"):
+        value = value[:-4]
+
+    return value
+
+
 def public_image_url(filename: str) -> str:
-    public_base_url = (
-        os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
-        or os.getenv("REVERSE_IMAGE_PUBLIC_BASE_URL", "").strip().rstrip("/")
+    public_base_url = next(
+        (
+            normalize_base_url(value)
+            for value in (
+                os.getenv("PUBLIC_BASE_URL", ""),
+                os.getenv("REVERSE_IMAGE_PUBLIC_BASE_URL", ""),
+                os.getenv("RENDER_EXTERNAL_URL", ""),
+                os.getenv("BACKEND_PUBLIC_URL", ""),
+                os.getenv("BACKEND_API_URL", ""),
+                os.getenv("API_BASE_URL", ""),
+            )
+            if normalize_base_url(value)
+        ),
+        "",
     )
 
     if public_base_url:
@@ -82,7 +126,37 @@ def public_image_url(filename: str) -> str:
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "working", "engine": "real-image-analyzer"})
+    return jsonify(
+        {
+            "status": "working",
+            "engine": "real-image-analyzer",
+            "maxUploadMb": MAX_UPLOAD_SIZE_BYTES // (1024 * 1024),
+            "allowedExtensions": sorted(ALLOWED_EXTENSIONS),
+            "services": {
+                "reverseSearchConfigured": bool(
+                    os.getenv("SERPAPI_KEY", "").strip()
+                    or os.getenv("SERP_API_KEY", "").strip()
+                    or os.getenv("SERPAPI_API_KEY", "").strip()
+                ),
+                "googleVisionConfigured": bool(
+                    os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
+                    or os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON", "").strip()
+                    or os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+                    or os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip()
+                    or os.getenv("GOOGLE_CREDENTIALS_BASE64", "").strip()
+                    or os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+                ),
+                "publicImageBaseConfigured": bool(
+                    os.getenv("PUBLIC_BASE_URL", "").strip()
+                    or os.getenv("REVERSE_IMAGE_PUBLIC_BASE_URL", "").strip()
+                    or os.getenv("RENDER_EXTERNAL_URL", "").strip()
+                    or os.getenv("BACKEND_PUBLIC_URL", "").strip()
+                    or os.getenv("BACKEND_API_URL", "").strip()
+                    or os.getenv("API_BASE_URL", "").strip()
+                ),
+            },
+        }
+    )
 
 
 @app.route("/api/reverse-image/<path:filename>")
@@ -149,5 +223,3 @@ if __name__ == "__main__":
         debug=os.getenv("FLASK_DEBUG") == "1",
         port=int(os.getenv("PORT", "5000")),
     )
-
-

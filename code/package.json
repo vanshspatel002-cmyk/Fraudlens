@@ -47,6 +47,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "eslint .",
+    "check": "tsc -b",
     "preview": "vite preview"
   }
 }

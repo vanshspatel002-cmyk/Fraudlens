@@ -30,6 +30,11 @@ Environment variables:
 - `FLASK_DEBUG=1` enables Flask debug mode.
 - `LOG_LEVEL=DEBUG` changes backend log verbosity.
 - `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173` restricts CORS. Default is `*`.
+- `SERPAPI_KEY` enables reverse image search. `SERP_API_KEY` and `SERPAPI_API_KEY` are also accepted.
+- `PUBLIC_BASE_URL` should point to the public Render backend origin, for example `https://your-service.onrender.com`. `RENDER_EXTERNAL_URL`, `BACKEND_PUBLIC_URL`, `BACKEND_API_URL`, and `API_BASE_URL` are also accepted.
+- `GOOGLE_CREDENTIALS_JSON` enables Google Vision when set to the full service-account JSON. `GOOGLE_APPLICATION_CREDENTIALS_JSON`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GCP_SERVICE_ACCOUNT_JSON`, and `GOOGLE_CREDENTIALS_BASE64` are also accepted.
+
+For Vercel frontend deployments, either set `VITE_API_URL`/`VITE_API_BASE_URL` to the Render backend URL before building, or set `BACKEND_API_URL` on Vercel and let the included `/api/*` proxy forward requests to Render.
 
 ## Error Response Format
 
@@ -354,4 +359,3 @@ curl.exe -X POST http://127.0.0.1:5000/api/report/pdf ^
   -d "{\"score\":82.4,\"risk_level\":\"low\",\"aiProb\":18,\"metadata\":{},\"forgery\":{},\"findings\":[],\"recommendations\":[]}" ^
   --output fraudlens-report.pdf
 ```
-

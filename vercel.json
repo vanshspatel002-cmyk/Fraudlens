@@ -1,4 +1,9 @@
 {
   "buildCommand": "cd code && npm install && npm run build",
-  "outputDirectory": "code/dist"
+  "outputDirectory": "code/dist",
+  "functions": {
+    "api/[...path].js": {
+      "maxDuration": 60
+    }
+  }
 }

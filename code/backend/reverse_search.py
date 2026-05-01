@@ -175,7 +175,11 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
     request cannot be performed from a private localhost-only URL.
     """
     load_local_env()
-    api_key = os.getenv("SERPAPI_KEY", "").strip()
+    api_key = (
+        os.getenv("SERPAPI_KEY", "").strip()
+        or os.getenv("SERP_API_KEY", "").strip()
+        or os.getenv("SERPAPI_API_KEY", "").strip()
+    )
 
     if not api_key:
         print("SERPAPI_KEY missing")
@@ -192,6 +196,10 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
         return fallback("public image URL missing")
 
     parsed_url = urlparse(image_url)
+
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        print(f"[reverse_search] Reverse search skipped (invalid image URL: {image_url})")
+        return fallback("uploaded image URL is invalid")
 
     if parsed_url.hostname in {"127.0.0.1", "localhost"}:
         print("[reverse_search] Reverse search skipped (image URL is local-only)")

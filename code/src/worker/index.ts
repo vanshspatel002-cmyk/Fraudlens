@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-type WorkerEnv = Env & {
+type WorkerEnv = {
   API_BASE_URL?: string;
 };
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import base64
 import json
 import re
 import tempfile
@@ -83,7 +84,21 @@ def unavailable_result(message: str = UNAVAILABLE_MESSAGE) -> dict[str, Any]:
 def _configure_google_credentials() -> bool:
     load_local_env()
 
-    credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
+    credentials_json = next(
+        (
+            value.strip()
+            for value in (
+                os.getenv("GOOGLE_CREDENTIALS_JSON", ""),
+                os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON", ""),
+                os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", ""),
+                os.getenv("GCP_SERVICE_ACCOUNT_JSON", ""),
+            )
+            if value.strip()
+        ),
+        "",
+    )
+
+    credentials_base64 = os.getenv("GOOGLE_CREDENTIALS_BASE64", "").strip()
 
     if credentials_json:
         try:
@@ -96,9 +111,23 @@ def _configure_google_credentials() -> bool:
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
             print("Google Vision credentials loaded from GOOGLE_CREDENTIALS_JSON")
             return True
-        except (json.JSONDecodeError, OSError):
-            print("Google Vision credentials missing")
-            return False
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"Google Vision credentials JSON could not be loaded: {exc}")
+
+    if credentials_base64:
+        try:
+            decoded_credentials = base64.b64decode(credentials_base64).decode("utf-8")
+            parsed_credentials = json.loads(decoded_credentials)
+            RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            RENDER_CREDENTIALS_PATH.write_text(
+                json.dumps(parsed_credentials),
+                encoding="utf-8",
+            )
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
+            print("Google Vision credentials loaded from GOOGLE_CREDENTIALS_BASE64")
+            return True
+        except (ValueError, json.JSONDecodeError, OSError) as exc:
+            print(f"Google Vision base64 credentials could not be loaded: {exc}")
 
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip().strip('"').strip("'")
 
@@ -295,4 +324,4 @@ def analyze_google_vision(image_path: str | Path) -> dict[str, Any]:
         return result
     except Exception as exc:
         print(f"[google_vision] Google Vision unavailable: {exc}")
-        return unavailable_result()
+        return unavailable_result(f"Google Vision unavailable: {exc}")

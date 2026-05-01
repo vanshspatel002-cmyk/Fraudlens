@@ -4,6 +4,7 @@ venv/
 __pycache__/
 uploads/
 .env
+*.log
 backend/keys/
 *.json
 !package.json
@@ -11,3 +12,7 @@ backend/keys/
 !vercel.json
 !code/package.json
 !code/package-lock.json
+!code/tsconfig.json
+!code/tsconfig.*.json
+!code/wrangler.json
+!code/knip.json
