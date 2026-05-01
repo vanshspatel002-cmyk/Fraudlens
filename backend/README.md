@@ -7,7 +7,7 @@ Use these Render commands with this directory:
 
 ```bash
 pip install -r requirements.txt
-gunicorn app:app
+gunicorn --bind 0.0.0.0:$PORT app:app
 ```
 
 If you prefer not to use this wrapper, set Render Root Directory to `code/backend`

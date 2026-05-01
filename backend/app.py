@@ -19,3 +19,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 app = module.app
+
+
+if __name__ == "__main__":
+    module.app.run(host="0.0.0.0", port=int(module.os.getenv("PORT", "5000")))
