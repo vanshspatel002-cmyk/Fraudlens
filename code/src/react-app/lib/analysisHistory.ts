@@ -67,8 +67,10 @@ export type AnalysisResult = {
       status: string;
       message: string;
       configuredEnv?: string | null;
+      discoveredCredentialFile?: string | null;
       missingAnyOf?: string[];
       missingSplitEnvAlternative?: string[];
+      secretFilePathsChecked?: string[];
     };
   };
   metrics?: Record<string, number | string | boolean | null>;

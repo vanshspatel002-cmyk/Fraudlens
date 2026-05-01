@@ -12,6 +12,15 @@ from typing import Any
 UNAVAILABLE_MESSAGE = "Google Vision unavailable"
 MISSING_CREDENTIALS_MESSAGE = "Google Vision credentials not configured."
 RENDER_CREDENTIALS_PATH = Path("/tmp/google_credentials.json")
+COMMON_CREDENTIAL_PATHS = (
+    "/etc/secrets/google_credentials.json",
+    "/etc/secrets/google-credentials.json",
+    "/etc/secrets/googlevision.json",
+    "/etc/secrets/googlevision.json.json",
+    "keys/googlevision.json",
+    "keys/googlevision.json.json",
+    "google_credentials.json",
+)
 WATERMARK_KEYWORDS = (
     "shutterstock",
     "getty",
@@ -110,6 +119,31 @@ def _parse_credentials_json(value: str, source: str) -> bool:
     return _write_credentials_file(parsed_credentials, source)
 
 
+def _decode_base64_credentials(value: str) -> str:
+    cleaned = value.strip()
+
+    if "," in cleaned and cleaned.lower().startswith("data:"):
+        cleaned = cleaned.split(",", 1)[1]
+
+    missing_padding = len(cleaned) % 4
+
+    if missing_padding:
+        cleaned += "=" * (4 - missing_padding)
+
+    return base64.b64decode(cleaned).decode("utf-8")
+
+
+def _candidate_credential_paths() -> list[Path]:
+    base_dir = Path(__file__).resolve().parent
+    candidates = []
+
+    for raw_path in COMMON_CREDENTIAL_PATHS:
+        path = Path(raw_path)
+        candidates.append(path if path.is_absolute() else base_dir / path)
+
+    return candidates
+
+
 def _credentials_from_split_env() -> bool:
     project_id = os.getenv("GOOGLE_PROJECT_ID", "").strip()
     client_email = os.getenv("GOOGLE_CLIENT_EMAIL", "").strip()
@@ -160,7 +194,7 @@ def _configure_google_credentials() -> bool:
 
     if credentials_base64:
         try:
-            decoded_credentials = base64.b64decode(credentials_base64).decode("utf-8")
+            decoded_credentials = _decode_base64_credentials(credentials_base64)
             if _parse_credentials_json(decoded_credentials, "GOOGLE_CREDENTIALS_BASE64"):
                 return True
         except ValueError as exc:
@@ -176,6 +210,12 @@ def _configure_google_credentials() -> bool:
         return True
 
     if not credentials_path:
+        for candidate_path in _candidate_credential_paths():
+            if candidate_path.is_file():
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(candidate_path)
+                print(f"Google Vision credentials loaded from discovered file: {candidate_path}")
+                return True
+
         print("Google Vision credentials missing")
         return False
 

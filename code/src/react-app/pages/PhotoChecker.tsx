@@ -242,8 +242,13 @@ function parseFeatureDiagnostics(value: unknown): ResultType["featureDiagnostics
             typeof googleVision.configuredEnv === "string"
               ? googleVision.configuredEnv
               : null,
+          discoveredCredentialFile:
+            typeof googleVision.discoveredCredentialFile === "string"
+              ? googleVision.discoveredCredentialFile
+              : null,
           missingAnyOf: parseStringList(googleVision.missingAnyOf),
           missingSplitEnvAlternative: parseStringList(googleVision.missingSplitEnvAlternative),
+          secretFilePathsChecked: parseStringList(googleVision.secretFilePathsChecked),
         }
       : undefined,
   };
@@ -1220,12 +1225,15 @@ export default function PhotoChecker() {
       const missingEnv = diagnostics?.missingAnyOf?.length
         ? ` Missing Render env: ${diagnostics.missingAnyOf.join(" or ")}.`
         : "";
+      const secretFileHint = diagnostics?.secretFilePathsChecked?.length
+        ? ` Secret file path also accepted: ${diagnostics.secretFilePathsChecked[0]}.`
+        : "";
 
       return (
         <ReportCard icon={SearchCheck} title="Google Vision Analysis">
           <ServiceNoticeCard
             title={isMissingConfig ? "Not configured" : "Unavailable"}
-            message={`${message || "Google Vision is unavailable."}${missingEnv}`}
+            message={`${message || "Google Vision is unavailable."}${missingEnv}${secretFileHint}`}
           />
         </ReportCard>
       );

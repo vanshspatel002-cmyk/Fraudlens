@@ -28,6 +28,15 @@ GOOGLE_VISION_CREDENTIAL_ENV_NAMES = (
     "GOOGLE_APPLICATION_CREDENTIALS",
 )
 GOOGLE_VISION_SPLIT_ENV_NAMES = ("GOOGLE_PROJECT_ID", "GOOGLE_CLIENT_EMAIL", "GOOGLE_PRIVATE_KEY")
+GOOGLE_VISION_SECRET_FILE_PATHS = (
+    "/etc/secrets/google_credentials.json",
+    "/etc/secrets/google-credentials.json",
+    "/etc/secrets/googlevision.json",
+    "/etc/secrets/googlevision.json.json",
+    "keys/googlevision.json",
+    "keys/googlevision.json.json",
+    "google_credentials.json",
+)
 PUBLIC_BASE_URL_ENV_NAMES = (
     "PUBLIC_BASE_URL",
     "REVERSE_IMAGE_PUBLIC_BASE_URL",
@@ -78,6 +87,17 @@ def has_split_google_credentials() -> bool:
     return all(os.getenv(name, "").strip() for name in GOOGLE_VISION_SPLIT_ENV_NAMES)
 
 
+def discovered_google_credential_file() -> str | None:
+    for raw_path in GOOGLE_VISION_SECRET_FILE_PATHS:
+        path = Path(raw_path)
+        candidate = path if path.is_absolute() else BASE_DIR / path
+
+        if candidate.is_file():
+            return str(candidate)
+
+    return None
+
+
 def is_public_url(value: str) -> bool:
     normalized = value.strip().lower()
     return normalized.startswith("https://") or normalized.startswith("http://")
@@ -86,9 +106,10 @@ def is_public_url(value: str) -> bool:
 def feature_diagnostics() -> dict:
     reverse_key = first_configured_env(REVERSE_SEARCH_KEY_ENV_NAMES)
     google_credential = first_configured_env(GOOGLE_VISION_CREDENTIAL_ENV_NAMES)
+    google_file = discovered_google_credential_file()
     public_base = first_configured_env(PUBLIC_BASE_URL_ENV_NAMES)
     public_base_value = os.getenv(public_base, "").strip() if public_base else ""
-    google_ready = bool(google_credential or has_split_google_credentials())
+    google_ready = bool(google_credential or has_split_google_credentials() or google_file)
     reverse_ready = bool(reverse_key)
 
     return {
@@ -109,12 +130,14 @@ def feature_diagnostics() -> dict:
             "configured": google_ready,
             "status": "ready" if google_ready else "missing_credentials",
             "configuredEnv": google_credential or ("split_env_vars" if has_split_google_credentials() else None),
+            "discoveredCredentialFile": google_file,
             "missingAnyOf": [] if google_ready else list(GOOGLE_VISION_CREDENTIAL_ENV_NAMES),
             "missingSplitEnvAlternative": [] if google_ready else list(GOOGLE_VISION_SPLIT_ENV_NAMES),
+            "secretFilePathsChecked": list(GOOGLE_VISION_SECRET_FILE_PATHS),
             "message": (
                 "Google Vision credentials are configured."
                 if google_ready
-                else "Set GOOGLE_CREDENTIALS_JSON on Render to the full Google service-account JSON."
+                else "Set GOOGLE_CREDENTIALS_JSON on Render to the full Google service-account JSON, or add a Render Secret File at /etc/secrets/google_credentials.json."
             ),
         },
     }
