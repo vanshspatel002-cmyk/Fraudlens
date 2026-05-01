@@ -171,6 +171,17 @@ function parseMatchingPages(value: unknown) {
     : [];
 }
 
+function isReverseSearchNoResultsMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("hasn't returned any results") ||
+    normalized.includes("has not returned any results") ||
+    normalized.includes("no results") ||
+    normalized.includes("zero results")
+  );
+}
+
 function parseStringRecord(value: unknown) {
   if (!value || typeof value !== "object") return {};
 
@@ -356,17 +367,20 @@ function parseAnalysisResult(payload: unknown): ResultType {
         }))
         .filter((source) => source.url)
     : [];
+  const reverseSearchMessage = asString(reverseSearch?.message, "");
+  const reverseSearchNoResults = isReverseSearchNoResultsMessage(reverseSearchMessage);
   const parsedReverseSearch = reverseSearch
     ? {
-        available: reverseSearch.available === true,
-        message: asString(reverseSearch.message, ""),
-        matchesFound: asNumber(reverseSearch.matchesFound),
+        available: reverseSearch.available === true || reverseSearchNoResults,
+        message: reverseSearchNoResults ? "No strong online reuse detected." : reverseSearchMessage,
+        matchesFound: reverseSearchNoResults ? 0 : asNumber(reverseSearch.matchesFound),
         sources: reverseSources,
-        originalityScore:
-          typeof reverseSearch.originalityScore === "number"
+        originalityScore: reverseSearchNoResults
+          ? 100
+          : typeof reverseSearch.originalityScore === "number"
             ? reverseSearch.originalityScore
             : null,
-        stockPhotoDetected: reverseSearch.stockPhotoDetected === true,
+        stockPhotoDetected: reverseSearchNoResults ? false : reverseSearch.stockPhotoDetected === true,
       }
     : undefined;
   const scoreAdjustments = Array.isArray(raw.scoreAdjustments)
