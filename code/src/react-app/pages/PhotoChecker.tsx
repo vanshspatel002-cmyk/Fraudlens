@@ -111,11 +111,9 @@ type Tone = "safe" | "warning" | "danger";
 function isSupportedImage(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase();
 
-  return (
-    !!extension &&
-    ACCEPTED_IMAGE_EXTENSIONS.includes(extension) &&
-    (file.type === "" || ACCEPTED_IMAGE_MIME_TYPES.includes(file.type.toLowerCase()))
-  );
+  if (!extension || !ACCEPTED_IMAGE_EXTENSIONS.includes(extension)) return false;
+
+  return true;
 }
 
 function asNumber(value: unknown, fallback = 0) {
