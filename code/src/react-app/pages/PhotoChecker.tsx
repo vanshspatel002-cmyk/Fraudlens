@@ -65,6 +65,22 @@ const steps = [
 
 const MAX_UPLOAD_SIZE_MB = 10;
 const ACCEPTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "jfif", "png", "webp", "bmp", "tif", "tiff"];
+const ACCEPTED_IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/jfif",
+  "image/pjpeg",
+  "image/png",
+  "image/webp",
+  "image/bmp",
+  "image/x-ms-bmp",
+  "image/tiff",
+];
+const IMAGE_INPUT_ACCEPT = [
+  ...ACCEPTED_IMAGE_EXTENSIONS.map((extension) => `.${extension}`),
+  ...ACCEPTED_IMAGE_MIME_TYPES,
+].join(",");
+const ACCEPTED_IMAGE_LABEL = "JPG, JPEG, JFIF, PNG, WEBP, BMP, or TIFF";
 const PDF_SAFE_TEXT_LIMIT = 110;
 
 function getApiBaseUrl() {
@@ -98,7 +114,7 @@ function isSupportedImage(file: File) {
   return (
     !!extension &&
     ACCEPTED_IMAGE_EXTENSIONS.includes(extension) &&
-    (file.type === "" || file.type.startsWith("image/"))
+    (file.type === "" || ACCEPTED_IMAGE_MIME_TYPES.includes(file.type.toLowerCase()))
   );
 }
 
@@ -550,7 +566,7 @@ export default function PhotoChecker() {
 
     if (!isSupportedImage(file)) {
       setError(
-        `Please upload a supported image file: ${ACCEPTED_IMAGE_EXTENSIONS.join(", ")}.`
+        `Please upload a supported image file: ${ACCEPTED_IMAGE_LABEL}.`
       );
       return;
     }
@@ -1614,7 +1630,7 @@ export default function PhotoChecker() {
               />
               <input
                 type="file"
-                accept={ACCEPTED_IMAGE_EXTENSIONS.map((extension) => `.${extension}`).join(",")}
+                accept={IMAGE_INPUT_ACCEPT}
                 onChange={handleFileSelect}
                 className="absolute inset-0 cursor-pointer opacity-0"
               />
@@ -1624,7 +1640,7 @@ export default function PhotoChecker() {
               </div>
               <p className="relative text-lg font-semibold">Drop an image into the forensic queue</p>
               <p className="relative mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-                JPG, PNG, WEBP, BMP, or TIFF up to {MAX_UPLOAD_SIZE_MB} MB.
+                {ACCEPTED_IMAGE_LABEL} up to {MAX_UPLOAD_SIZE_MB} MB.
               </p>
               <div className="relative mt-6 flex flex-wrap justify-center gap-2">
                 {intelligenceModules.map((module) => (
