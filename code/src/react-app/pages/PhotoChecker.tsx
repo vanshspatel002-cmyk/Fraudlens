@@ -1100,11 +1100,17 @@ export default function PhotoChecker() {
     </div>
   );
 
-  const NotConfiguredCard = ({ message }: { message?: string }) => (
+  const ServiceNoticeCard = ({
+    message,
+    title = "Unavailable",
+  }: {
+    message?: string;
+    title?: string;
+  }) => (
     <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
       <div className="mb-2 flex items-center gap-2 font-medium">
         <TriangleAlert className="size-4" />
-        Not configured
+        {title}
       </div>
       <p className="text-amber-100/80">
         {message || "This service is unavailable, so it was not used in the report."}
@@ -1137,9 +1143,14 @@ export default function PhotoChecker() {
 
   const GoogleVisionCard = ({ googleVision }: { googleVision: ResultType["googleVision"] }) => {
     if (!googleVision?.available) {
+      const isMissingConfig = googleVision?.message?.toLowerCase().includes("credentials not configured");
+
       return (
         <ReportCard icon={SearchCheck} title="Google Vision Analysis">
-          <NotConfiguredCard message={googleVision?.message} />
+          <ServiceNoticeCard
+            title={isMissingConfig ? "Not configured" : "Unavailable"}
+            message={googleVision?.message}
+          />
         </ReportCard>
       );
     }
@@ -1325,12 +1336,12 @@ export default function PhotoChecker() {
                   : "border-amber-300/25 bg-amber-300/10 text-amber-200"
               }`}
             >
-              {isActive ? "Active" : "Not configured"}
+              {isActive ? "Active" : "Unavailable"}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!isActive && <NotConfiguredCard message={reverseSearch?.message} />}
+          {!isActive && <ServiceNoticeCard message={reverseSearch?.message} />}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-white/10 bg-black/20 p-4">

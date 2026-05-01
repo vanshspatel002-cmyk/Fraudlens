@@ -32,6 +32,12 @@ MISSING_KEY_RESPONSE = {
     "originalityScore": None,
     "stockPhotoDetected": False,
 }
+NO_RESULTS_ERROR_MARKERS = (
+    "hasn't returned any results",
+    "has not returned any results",
+    "no results",
+    "zero results",
+)
 
 
 def load_local_env() -> None:
@@ -167,6 +173,11 @@ def parse_serpapi_results(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def is_no_results_error(message: str) -> bool:
+    normalized = message.lower()
+    return any(marker in normalized for marker in NO_RESULTS_ERROR_MARKERS)
+
+
 def reverse_image_search(image_path: str | Path, image_url: str | None = None) -> dict[str, Any]:
     """Search the web for copies of an uploaded image through SerpAPI.
 
@@ -236,6 +247,10 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
     if payload.get("error"):
         serpapi_error = str(payload["error"])
         print(f"SerpAPI error message: {serpapi_error}")
+        if is_no_results_error(serpapi_error):
+            print("[reverse_search] SerpAPI returned no matches; treating as completed search")
+            return parse_serpapi_results({})
+
         return fallback(serpapi_error)
 
     result = parse_serpapi_results(payload)

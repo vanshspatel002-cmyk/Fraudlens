@@ -81,6 +81,60 @@ def unavailable_result(message: str = UNAVAILABLE_MESSAGE) -> dict[str, Any]:
     }
 
 
+def _write_credentials_file(credentials: dict[str, Any], source: str) -> bool:
+    try:
+        RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        RENDER_CREDENTIALS_PATH.write_text(
+            json.dumps(credentials),
+            encoding="utf-8",
+        )
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
+        print(f"Google Vision credentials loaded from {source}")
+        return True
+    except OSError as exc:
+        print(f"Google Vision credentials file could not be written: {exc}")
+        return False
+
+
+def _parse_credentials_json(value: str, source: str) -> bool:
+    try:
+        parsed_credentials = json.loads(value)
+    except json.JSONDecodeError as exc:
+        print(f"Google Vision credentials JSON from {source} could not be parsed: {exc}")
+        return False
+
+    if not isinstance(parsed_credentials, dict):
+        print(f"Google Vision credentials JSON from {source} is not an object")
+        return False
+
+    return _write_credentials_file(parsed_credentials, source)
+
+
+def _credentials_from_split_env() -> bool:
+    project_id = os.getenv("GOOGLE_PROJECT_ID", "").strip()
+    client_email = os.getenv("GOOGLE_CLIENT_EMAIL", "").strip()
+    private_key = os.getenv("GOOGLE_PRIVATE_KEY", "").strip().strip('"').strip("'")
+
+    if not (project_id and client_email and private_key):
+        return False
+
+    credentials = {
+        "type": "service_account",
+        "project_id": project_id,
+        "private_key_id": os.getenv("GOOGLE_PRIVATE_KEY_ID", "").strip(),
+        "private_key": private_key.replace("\\n", "\n"),
+        "client_email": client_email,
+        "client_id": os.getenv("GOOGLE_CLIENT_ID", "").strip(),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": os.getenv("GOOGLE_CLIENT_CERT_URL", "").strip(),
+        "universe_domain": "googleapis.com",
+    }
+
+    return _write_credentials_file(credentials, "split Google service-account env vars")
+
+
 def _configure_google_credentials() -> bool:
     load_local_env()
 
@@ -101,35 +155,25 @@ def _configure_google_credentials() -> bool:
     credentials_base64 = os.getenv("GOOGLE_CREDENTIALS_BASE64", "").strip()
 
     if credentials_json:
-        try:
-            parsed_credentials = json.loads(credentials_json)
-            RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            RENDER_CREDENTIALS_PATH.write_text(
-                json.dumps(parsed_credentials),
-                encoding="utf-8",
-            )
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
-            print("Google Vision credentials loaded from GOOGLE_CREDENTIALS_JSON")
+        if _parse_credentials_json(credentials_json, "GOOGLE_CREDENTIALS_JSON"):
             return True
-        except (json.JSONDecodeError, OSError) as exc:
-            print(f"Google Vision credentials JSON could not be loaded: {exc}")
 
     if credentials_base64:
         try:
             decoded_credentials = base64.b64decode(credentials_base64).decode("utf-8")
-            parsed_credentials = json.loads(decoded_credentials)
-            RENDER_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            RENDER_CREDENTIALS_PATH.write_text(
-                json.dumps(parsed_credentials),
-                encoding="utf-8",
-            )
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(RENDER_CREDENTIALS_PATH)
-            print("Google Vision credentials loaded from GOOGLE_CREDENTIALS_BASE64")
-            return True
-        except (ValueError, json.JSONDecodeError, OSError) as exc:
+            if _parse_credentials_json(decoded_credentials, "GOOGLE_CREDENTIALS_BASE64"):
+                return True
+        except ValueError as exc:
             print(f"Google Vision base64 credentials could not be loaded: {exc}")
 
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip().strip('"').strip("'")
+
+    if credentials_path.startswith("{"):
+        if _parse_credentials_json(credentials_path, "GOOGLE_APPLICATION_CREDENTIALS"):
+            return True
+
+    if _credentials_from_split_env():
+        return True
 
     if not credentials_path:
         print("Google Vision credentials missing")
@@ -138,7 +182,7 @@ def _configure_google_credentials() -> bool:
     expanded_path = Path(os.path.expandvars(credentials_path)).expanduser()
 
     if not expanded_path.is_file():
-        print("Google Vision credentials missing")
+        print(f"Google Vision credentials file not found: {expanded_path}")
         return False
 
     print("Google Vision credentials loaded from GOOGLE_APPLICATION_CREDENTIALS")
