@@ -16,7 +16,7 @@ CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"}
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "jfif", "png", "webp", "bmp", "tif", "tiff"}
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 REVERSE_SEARCH_KEY_ENV_NAMES = ("SERPAPI_KEY", "SERP_API_KEY", "SERPAPI_API_KEY")
 GOOGLE_VISION_CREDENTIAL_ENV_NAMES = (
@@ -244,7 +244,7 @@ def analyze():
         return jsonify({"error": "Empty filename"}), 400
 
     if not allowed_file(file.filename):
-        return jsonify({"error": "Only JPG, JPEG, PNG, WEBP, BMP, or TIFF files are allowed"}), 400
+        return jsonify({"error": "Only JPG, JPEG, JFIF, PNG, WEBP, BMP, or TIFF files are allowed"}), 400
 
     original_filename = secure_filename(file.filename)
     extension = original_filename.rsplit(".", 1)[1].lower()

@@ -64,7 +64,7 @@ const steps = [
 ];
 
 const MAX_UPLOAD_SIZE_MB = 10;
-const ACCEPTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"];
+const ACCEPTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "jfif", "png", "webp", "bmp", "tif", "tiff"];
 const PDF_SAFE_TEXT_LIMIT = 110;
 
 function getApiBaseUrl() {
