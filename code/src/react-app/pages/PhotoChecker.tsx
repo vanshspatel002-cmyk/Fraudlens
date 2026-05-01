@@ -202,6 +202,53 @@ function parseBooleanRecord(value: unknown) {
   );
 }
 
+function parseFeatureDiagnostics(value: unknown): ResultType["featureDiagnostics"] {
+  if (!value || typeof value !== "object") return undefined;
+
+  const diagnostics = value as Record<string, unknown>;
+  const reverseSearch =
+    diagnostics.reverseSearch && typeof diagnostics.reverseSearch === "object"
+      ? (diagnostics.reverseSearch as Record<string, unknown>)
+      : undefined;
+  const googleVision =
+    diagnostics.googleVision && typeof diagnostics.googleVision === "object"
+      ? (diagnostics.googleVision as Record<string, unknown>)
+      : undefined;
+
+  return {
+    reverseSearch: reverseSearch
+      ? {
+          configured: reverseSearch.configured === true,
+          status: asString(reverseSearch.status, ""),
+          message: asString(reverseSearch.message, ""),
+          configuredEnv:
+            typeof reverseSearch.configuredEnv === "string"
+              ? reverseSearch.configuredEnv
+              : null,
+          missingAnyOf: parseStringList(reverseSearch.missingAnyOf),
+          publicBaseConfiguredEnv:
+            typeof reverseSearch.publicBaseConfiguredEnv === "string"
+              ? reverseSearch.publicBaseConfiguredEnv
+              : null,
+          publicBaseLooksValid: reverseSearch.publicBaseLooksValid === true,
+        }
+      : undefined,
+    googleVision: googleVision
+      ? {
+          configured: googleVision.configured === true,
+          status: asString(googleVision.status, ""),
+          message: asString(googleVision.message, ""),
+          configuredEnv:
+            typeof googleVision.configuredEnv === "string"
+              ? googleVision.configuredEnv
+              : null,
+          missingAnyOf: parseStringList(googleVision.missingAnyOf),
+          missingSplitEnvAlternative: parseStringList(googleVision.missingSplitEnvAlternative),
+        }
+      : undefined,
+  };
+}
+
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(bytes / 1024, 1).toFixed(1)} KB`;
 
@@ -448,6 +495,7 @@ function parseAnalysisResult(payload: unknown): ResultType {
     },
     reverseSearch: parsedReverseSearch,
     googleVision: parsedGoogleVision,
+    featureDiagnostics: parseFeatureDiagnostics(raw.featureDiagnostics),
     findings,
     recommendations,
     scoreBreakdown,
@@ -1155,15 +1203,29 @@ export default function PhotoChecker() {
       <p className="text-sm text-muted-foreground">{empty}</p>
     );
 
-  const GoogleVisionCard = ({ googleVision }: { googleVision: ResultType["googleVision"] }) => {
+  const GoogleVisionCard = ({
+    googleVision,
+    diagnostics,
+  }: {
+    googleVision: ResultType["googleVision"];
+    diagnostics?: ResultType["featureDiagnostics"] extends infer D
+      ? D extends { googleVision?: infer G }
+        ? G
+        : never
+      : never;
+  }) => {
     if (!googleVision?.available) {
       const isMissingConfig = googleVision?.message?.toLowerCase().includes("credentials not configured");
+      const message = diagnostics?.message || googleVision?.message;
+      const missingEnv = diagnostics?.missingAnyOf?.length
+        ? ` Missing Render env: ${diagnostics.missingAnyOf.join(" or ")}.`
+        : "";
 
       return (
         <ReportCard icon={SearchCheck} title="Google Vision Analysis">
           <ServiceNoticeCard
             title={isMissingConfig ? "Not configured" : "Unavailable"}
-            message={googleVision?.message}
+            message={`${message || "Google Vision is unavailable."}${missingEnv}`}
           />
         </ReportCard>
       );
@@ -1327,12 +1389,24 @@ export default function PhotoChecker() {
 
   const ReverseSearchCard = ({
     reverseSearch,
+    diagnostics,
   }: {
     reverseSearch: ResultType["reverseSearch"];
+    diagnostics?: ResultType["featureDiagnostics"] extends infer D
+      ? D extends { reverseSearch?: infer R }
+        ? R
+        : never
+      : never;
   }) => {
     const isActive = reverseSearch?.available === true;
     const originalityScore = reverseSearch?.originalityScore;
     const sources = reverseSearch?.sources?.slice(0, 3) || [];
+    const missingEnv = diagnostics?.missingAnyOf?.length
+      ? ` Missing Render env: ${diagnostics.missingAnyOf.join(" or ")}.`
+      : "";
+    const noticeMessage = diagnostics?.message
+      ? `${diagnostics.message}${missingEnv}`
+      : reverseSearch?.message;
 
     return (
       <Card className="border-cyan-400/20 bg-card/85 shadow-xl shadow-cyan-950/20">
@@ -1355,7 +1429,7 @@ export default function PhotoChecker() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!isActive && <ServiceNoticeCard message={reverseSearch?.message} />}
+          {!isActive && <ServiceNoticeCard message={noticeMessage} />}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-white/10 bg-black/20 p-4">
@@ -1889,9 +1963,15 @@ export default function PhotoChecker() {
                 </div>
               </ReportCard>
 
-              <ReverseSearchCard reverseSearch={reverseSearch} />
+              <ReverseSearchCard
+                reverseSearch={reverseSearch}
+                diagnostics={result.featureDiagnostics?.reverseSearch}
+              />
 
-              <GoogleVisionCard googleVision={result.googleVision} />
+              <GoogleVisionCard
+                googleVision={result.googleVision}
+                diagnostics={result.featureDiagnostics?.googleVision}
+              />
 
               <ReportCard icon={ClipboardList} title="Score Breakdown" className="xl:col-span-2">
                 {result.scoreBreakdown && result.scoreBreakdown.length > 0 ? (

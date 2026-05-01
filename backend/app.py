@@ -18,6 +18,24 @@ BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"}
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+REVERSE_SEARCH_KEY_ENV_NAMES = ("SERPAPI_KEY", "SERP_API_KEY", "SERPAPI_API_KEY")
+GOOGLE_VISION_CREDENTIAL_ENV_NAMES = (
+    "GOOGLE_CREDENTIALS_JSON",
+    "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+    "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "GCP_SERVICE_ACCOUNT_JSON",
+    "GOOGLE_CREDENTIALS_BASE64",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+)
+GOOGLE_VISION_SPLIT_ENV_NAMES = ("GOOGLE_PROJECT_ID", "GOOGLE_CLIENT_EMAIL", "GOOGLE_PRIVATE_KEY")
+PUBLIC_BASE_URL_ENV_NAMES = (
+    "PUBLIC_BASE_URL",
+    "REVERSE_IMAGE_PUBLIC_BASE_URL",
+    "RENDER_EXTERNAL_URL",
+    "BACKEND_PUBLIC_URL",
+    "BACKEND_API_URL",
+    "API_BASE_URL",
+)
 
 
 def load_local_env() -> None:
@@ -52,6 +70,56 @@ def round_metric(value: float) -> int:
     return int(round(clamp(value)))
 
 
+def first_configured_env(names: tuple[str, ...]) -> str | None:
+    return next((name for name in names if os.getenv(name, "").strip()), None)
+
+
+def has_split_google_credentials() -> bool:
+    return all(os.getenv(name, "").strip() for name in GOOGLE_VISION_SPLIT_ENV_NAMES)
+
+
+def is_public_url(value: str) -> bool:
+    normalized = value.strip().lower()
+    return normalized.startswith("https://") or normalized.startswith("http://")
+
+
+def feature_diagnostics() -> dict:
+    reverse_key = first_configured_env(REVERSE_SEARCH_KEY_ENV_NAMES)
+    google_credential = first_configured_env(GOOGLE_VISION_CREDENTIAL_ENV_NAMES)
+    public_base = first_configured_env(PUBLIC_BASE_URL_ENV_NAMES)
+    public_base_value = os.getenv(public_base, "").strip() if public_base else ""
+    google_ready = bool(google_credential or has_split_google_credentials())
+    reverse_ready = bool(reverse_key)
+
+    return {
+        "reverseSearch": {
+            "configured": reverse_ready,
+            "status": "ready" if reverse_ready else "missing_api_key",
+            "configuredEnv": reverse_key,
+            "missingAnyOf": [] if reverse_ready else list(REVERSE_SEARCH_KEY_ENV_NAMES),
+            "publicBaseConfiguredEnv": public_base,
+            "publicBaseLooksValid": bool(public_base_value and is_public_url(public_base_value)),
+            "message": (
+                "Reverse search is configured."
+                if reverse_ready
+                else "Set SERPAPI_KEY on Render to enable reverse image search."
+            ),
+        },
+        "googleVision": {
+            "configured": google_ready,
+            "status": "ready" if google_ready else "missing_credentials",
+            "configuredEnv": google_credential or ("split_env_vars" if has_split_google_credentials() else None),
+            "missingAnyOf": [] if google_ready else list(GOOGLE_VISION_CREDENTIAL_ENV_NAMES),
+            "missingSplitEnvAlternative": [] if google_ready else list(GOOGLE_VISION_SPLIT_ENV_NAMES),
+            "message": (
+                "Google Vision credentials are configured."
+                if google_ready
+                else "Set GOOGLE_CREDENTIALS_JSON on Render to the full Google service-account JSON."
+            ),
+        },
+    }
+
+
 def frontend_payload(result):
     metrics = result["metrics"]
     ela_manipulation_risk = metrics.get(
@@ -81,6 +149,7 @@ def frontend_payload(result):
 
     return {
         **result,
+        "featureDiagnostics": feature_diagnostics(),
         "aiProb": round_metric(ai_like_probability),
         "forgery": {
             "compression": round_metric(ela_manipulation_risk),
@@ -126,6 +195,8 @@ def public_image_url(filename: str) -> str:
 
 @app.route("/api/health")
 def health():
+    diagnostics = feature_diagnostics()
+
     return jsonify(
         {
             "status": "working",
@@ -133,30 +204,18 @@ def health():
             "maxUploadMb": MAX_UPLOAD_SIZE_BYTES // (1024 * 1024),
             "allowedExtensions": sorted(ALLOWED_EXTENSIONS),
             "services": {
-                "reverseSearchConfigured": bool(
-                    os.getenv("SERPAPI_KEY", "").strip()
-                    or os.getenv("SERP_API_KEY", "").strip()
-                    or os.getenv("SERPAPI_API_KEY", "").strip()
-                ),
-                "googleVisionConfigured": bool(
-                    os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
-                    or os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON", "").strip()
-                    or os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
-                    or os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip()
-                    or os.getenv("GOOGLE_CREDENTIALS_BASE64", "").strip()
-                    or os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
-                ),
-                "publicImageBaseConfigured": bool(
-                    os.getenv("PUBLIC_BASE_URL", "").strip()
-                    or os.getenv("REVERSE_IMAGE_PUBLIC_BASE_URL", "").strip()
-                    or os.getenv("RENDER_EXTERNAL_URL", "").strip()
-                    or os.getenv("BACKEND_PUBLIC_URL", "").strip()
-                    or os.getenv("BACKEND_API_URL", "").strip()
-                    or os.getenv("API_BASE_URL", "").strip()
-                ),
+                "reverseSearchConfigured": diagnostics["reverseSearch"]["configured"],
+                "googleVisionConfigured": diagnostics["googleVision"]["configured"],
+                "publicImageBaseConfigured": bool(diagnostics["reverseSearch"]["publicBaseConfiguredEnv"]),
             },
+            "featureDiagnostics": diagnostics,
         }
     )
+
+
+@app.route("/api/diagnostics")
+def diagnostics():
+    return jsonify({"status": "working", "featureDiagnostics": feature_diagnostics()})
 
 
 @app.route("/api/reverse-image/<path:filename>")

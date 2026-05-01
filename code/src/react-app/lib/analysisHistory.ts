@@ -52,6 +52,25 @@ export type AnalysisResult = {
     marketplaceSignals: Record<string, boolean>;
     message: string;
   };
+  featureDiagnostics?: {
+    reverseSearch?: {
+      configured: boolean;
+      status: string;
+      message: string;
+      configuredEnv?: string | null;
+      missingAnyOf?: string[];
+      publicBaseConfiguredEnv?: string | null;
+      publicBaseLooksValid?: boolean;
+    };
+    googleVision?: {
+      configured: boolean;
+      status: string;
+      message: string;
+      configuredEnv?: string | null;
+      missingAnyOf?: string[];
+      missingSplitEnvAlternative?: string[];
+    };
+  };
   metrics?: Record<string, number | string | boolean | null>;
   ela?: Record<string, number | string | boolean | null>;
   noise?: Record<string, number | string | boolean | null>;
