@@ -582,14 +582,33 @@ export default function PhotoChecker() {
     let backendData: ResultType | null = null;
 
     try {
-      const formData = new FormData();
-      formData.append("image", selectedFile, selectedFile.name);
-
       const apiBaseUrl = getApiBaseUrl();
-      const res = await fetch(`${apiBaseUrl}/api/analyze`, {
-        method: "POST",
-        body: formData,
-      });
+      const apiBaseUrls = apiBaseUrl ? [apiBaseUrl, ""] : [""];
+      let res: Response | null = null;
+      let lastError: unknown = null;
+
+      for (const baseUrl of apiBaseUrls) {
+        try {
+          const formData = new FormData();
+          formData.append("image", selectedFile, selectedFile.name);
+          res = await fetch(`${baseUrl}/api/analyze`, {
+            method: "POST",
+            body: formData,
+          });
+          lastError = null;
+          break;
+        } catch (requestError) {
+          lastError = requestError;
+
+          if (!baseUrl) {
+            throw requestError;
+          }
+        }
+      }
+
+      if (!res) {
+        throw lastError instanceof Error ? lastError : new Error("Backend not running or connection failed");
+      }
 
       const payload = await res.json().catch(() => null);
 
@@ -2047,7 +2066,7 @@ export default function PhotoChecker() {
 
 function getAnalysisErrorMessage(error: Error) {
   if (error.message === "Failed to fetch") {
-    return "Could not reach the analysis backend. In production, configure the Vercel API proxy with BACKEND_API_URL or set VITE_API_URL to the Render backend URL.";
+    return "Could not reach the analysis backend. On Vercel, set BACKEND_API_URL to the Render backend URL and remove any broken VITE_API_URL value, or set VITE_API_URL to the exact HTTPS Render URL.";
   }
 
   return error.message;
