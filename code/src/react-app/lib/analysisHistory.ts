@@ -61,6 +61,7 @@ export type AnalysisResult = {
       missingAnyOf?: string[];
       publicBaseConfiguredEnv?: string | null;
       publicBaseLooksValid?: boolean;
+      missingPublicBaseAnyOf?: string[];
     };
     googleVision?: {
       configured: boolean;

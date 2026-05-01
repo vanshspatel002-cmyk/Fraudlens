@@ -231,6 +231,7 @@ function parseFeatureDiagnostics(value: unknown): ResultType["featureDiagnostics
               ? reverseSearch.publicBaseConfiguredEnv
               : null,
           publicBaseLooksValid: reverseSearch.publicBaseLooksValid === true,
+          missingPublicBaseAnyOf: parseStringList(reverseSearch.missingPublicBaseAnyOf),
         }
       : undefined,
     googleVision: googleVision
@@ -1431,8 +1432,11 @@ export default function PhotoChecker() {
     const missingEnv = diagnostics?.missingAnyOf?.length
       ? ` Missing Render env: ${diagnostics.missingAnyOf.join(" or ")}.`
       : "";
+    const missingPublicBase = diagnostics?.missingPublicBaseAnyOf?.length
+      ? ` Also set ${diagnostics.missingPublicBaseAnyOf[0]} to your Render backend URL.`
+      : "";
     const noticeMessage = diagnostics?.message
-      ? `${diagnostics.message}${missingEnv}`
+      ? `${diagnostics.message}${missingEnv}${missingPublicBase}`
       : reverseSearch?.message;
 
     return (

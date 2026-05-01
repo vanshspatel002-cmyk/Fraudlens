@@ -111,17 +111,25 @@ def feature_diagnostics() -> dict:
     public_base_value = os.getenv(public_base, "").strip() if public_base else ""
     google_ready = bool(google_credential or has_split_google_credentials() or google_file)
     reverse_ready = bool(reverse_key)
+    reverse_fully_ready = bool(reverse_key and public_base_value and is_public_url(public_base_value))
 
     return {
         "reverseSearch": {
             "configured": reverse_ready,
-            "status": "ready" if reverse_ready else "missing_api_key",
+            "status": (
+                "ready"
+                if reverse_fully_ready
+                else "missing_public_base_url" if reverse_ready else "missing_api_key"
+            ),
             "configuredEnv": reverse_key,
             "missingAnyOf": [] if reverse_ready else list(REVERSE_SEARCH_KEY_ENV_NAMES),
             "publicBaseConfiguredEnv": public_base,
             "publicBaseLooksValid": bool(public_base_value and is_public_url(public_base_value)),
+            "missingPublicBaseAnyOf": [] if public_base else list(PUBLIC_BASE_URL_ENV_NAMES),
             "message": (
                 "Reverse search is configured."
+                if reverse_fully_ready
+                else "Set PUBLIC_BASE_URL on Render to the public Render backend URL so SerpAPI can fetch uploaded images."
                 if reverse_ready
                 else "Set SERPAPI_KEY on Render to enable reverse image search."
             ),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -14,6 +15,9 @@ except ModuleNotFoundError:
 
 
 SERPAPI_ENDPOINT = "https://serpapi.com/search.json"
+SERPAPI_CONNECT_TIMEOUT_SECONDS = 10
+SERPAPI_READ_TIMEOUT_SECONDS = 50
+SERPAPI_MAX_ATTEMPTS = 3
 STOCK_SITE_KEYWORDS = (
     "shutterstock",
     "gettyimages",
@@ -76,6 +80,15 @@ def fallback(message: str) -> dict[str, Any]:
         "originalityScore": None,
         "stockPhotoDetected": False,
     }
+
+
+def safe_request_error(exc: Exception) -> str:
+    message = str(exc).strip()
+
+    if not message:
+        return exc.__class__.__name__
+
+    return message.replace("\n", " ")[:240]
 
 
 def domain_from_url(url: str) -> str:
@@ -218,31 +231,49 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
 
     print("[reverse_search] Reverse search started")
 
-    try:
-        response = requests.get(
-            SERPAPI_ENDPOINT,
-            params={
-                "engine": "google_reverse_image",
-                "image_url": image_url,
-                "api_key": api_key,
-                "hl": "en",
-                "gl": "us",
-                "no_cache": "false",
-            },
-            timeout=25,
-        )
-        print(f"SerpAPI HTTP status code: {response.status_code}")
+    payload = None
+    last_request_error = ""
 
-        if not response.ok:
-            return fallback(f"SerpAPI request failed with HTTP {response.status_code}")
+    for attempt in range(1, SERPAPI_MAX_ATTEMPTS + 1):
+        try:
+            print(f"[reverse_search] SerpAPI attempt {attempt}/{SERPAPI_MAX_ATTEMPTS}")
+            response = requests.get(
+                SERPAPI_ENDPOINT,
+                params={
+                    "engine": "google_reverse_image",
+                    "image_url": image_url,
+                    "api_key": api_key,
+                    "hl": "en",
+                    "gl": "us",
+                    "no_cache": "true" if attempt > 1 else "false",
+                },
+                timeout=(SERPAPI_CONNECT_TIMEOUT_SECONDS, SERPAPI_READ_TIMEOUT_SECONDS),
+            )
+            print(f"SerpAPI HTTP status code: {response.status_code}")
 
-        payload = response.json()
-    except RequestException:
-        print("[reverse_search] Reverse search failed: request exception")
-        return fallback("SerpAPI request failed")
-    except ValueError as exc:
-        print(f"[reverse_search] Reverse search failed: invalid JSON: {exc}")
-        return fallback("invalid SerpAPI response")
+            if response.status_code >= 500 and attempt < SERPAPI_MAX_ATTEMPTS:
+                time.sleep(attempt * 1.5)
+                continue
+
+            if not response.ok:
+                return fallback(f"SerpAPI request failed with HTTP {response.status_code}")
+
+            payload = response.json()
+            break
+        except RequestException as exc:
+            last_request_error = safe_request_error(exc)
+            print(f"[reverse_search] SerpAPI request attempt {attempt} failed: {last_request_error}")
+
+            if attempt < SERPAPI_MAX_ATTEMPTS:
+                time.sleep(attempt * 1.5)
+                continue
+        except ValueError as exc:
+            print(f"[reverse_search] Reverse search failed: invalid JSON: {exc}")
+            return fallback("invalid SerpAPI response")
+
+    if payload is None:
+        reason = last_request_error or "request failed after retries"
+        return fallback(f"SerpAPI request failed after {SERPAPI_MAX_ATTEMPTS} attempts: {reason}")
 
     if payload.get("error"):
         serpapi_error = str(payload["error"])
