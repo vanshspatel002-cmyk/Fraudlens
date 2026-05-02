@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 from PIL import ExifTags, Image
 
+cv2.setNumThreads(1)
 
 NOT_AVAILABLE = "Not available"
 EDITING_SOFTWARE_KEYWORDS = (

@@ -1,10 +1,12 @@
 import os
+import gc
 from pathlib import Path
 from uuid import uuid4
 
 from analyzer import AnalysisError, analyze_image, apply_reverse_search_to_result, clamp
 from flask import Flask, jsonify, request, send_from_directory, url_for
 from flask_cors import CORS
+from PIL import Image, ImageOps
 from reverse_search import reverse_image_search
 from vision_analyzer import analyze_google_vision
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -18,6 +20,8 @@ BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "jfif", "png", "webp", "bmp", "tif", "tiff"}
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+MAX_ANALYSIS_IMAGE_DIMENSION = int(os.getenv("MAX_ANALYSIS_IMAGE_DIMENSION", "1600"))
+MAX_ANALYSIS_IMAGE_PIXELS = int(os.getenv("MAX_ANALYSIS_IMAGE_PIXELS", "4000000"))
 REVERSE_SEARCH_KEY_ENV_NAMES = ("SERPAPI_KEY", "SERP_API_KEY", "SERPAPI_API_KEY")
 GOOGLE_VISION_CREDENTIAL_ENV_NAMES = (
     "GOOGLE_CREDENTIALS_JSON",
@@ -69,6 +73,7 @@ def load_local_env() -> None:
 load_local_env()
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+Image.MAX_IMAGE_PIXELS = MAX_ANALYSIS_IMAGE_PIXELS * 2
 
 
 def allowed_file(filename: str) -> bool:
@@ -77,6 +82,20 @@ def allowed_file(filename: str) -> bool:
 
 def round_metric(value: float) -> int:
     return int(round(clamp(value)))
+
+
+def prepare_analysis_image(source_path: Path, destination_path: Path) -> Path:
+    """Create a bounded RGB working image to reduce OpenCV/NumPy memory spikes."""
+    with Image.open(source_path) as image:
+        image = ImageOps.exif_transpose(image)
+        image = image.convert("RGB")
+        image.thumbnail(
+            (MAX_ANALYSIS_IMAGE_DIMENSION, MAX_ANALYSIS_IMAGE_DIMENSION),
+            Image.Resampling.LANCZOS,
+        )
+        image.save(destination_path, format="JPEG", quality=90, optimize=True)
+
+    return destination_path
 
 
 def first_configured_env(names: tuple[str, ...]) -> str | None:
@@ -136,6 +155,10 @@ def feature_diagnostics() -> dict:
                 if reverse_ready
                 else "Set SERPAPI_KEY on Render to enable reverse image search."
             ),
+        },
+        "memory": {
+            "maxAnalysisImageDimension": MAX_ANALYSIS_IMAGE_DIMENSION,
+            "maxAnalysisImagePixels": MAX_ANALYSIS_IMAGE_PIXELS,
         },
         "googleVision": {
             "configured": google_ready,
@@ -284,11 +307,13 @@ def analyze():
     extension = original_filename.rsplit(".", 1)[1].lower()
     filename = f"{uuid4().hex}.{extension}"
     filepath = UPLOAD_FOLDER / filename
+    analysis_filepath = UPLOAD_FOLDER / f"{uuid4().hex}-analysis.jpg"
     file.save(filepath)
 
     try:
-        result = analyze_image(filepath)
-        google_vision = analyze_google_vision(filepath)
+        prepare_analysis_image(filepath, analysis_filepath)
+        result = analyze_image(analysis_filepath)
+        google_vision = analyze_google_vision(analysis_filepath)
         result["googleVision"] = google_vision
         print(f"[api] googleVision available={google_vision['available']}")
         reverse_search = reverse_image_search(filepath, public_image_url(filename))
@@ -308,8 +333,10 @@ def analyze():
     finally:
         try:
             filepath.unlink(missing_ok=True)
+            analysis_filepath.unlink(missing_ok=True)
         except OSError as exc:
             print("[api] could not remove upload:", str(exc))
+        gc.collect()
 
 if __name__ == "__main__":
     app.run(
