@@ -246,6 +246,8 @@ function parseFeatureDiagnostics(value: unknown): ResultType["featureDiagnostics
               : null,
           publicBaseLooksValid: reverseSearch.publicBaseLooksValid === true,
           missingPublicBaseAnyOf: parseStringList(reverseSearch.missingPublicBaseAnyOf),
+          webThreads: asNumber(reverseSearch.webThreads),
+          concurrencyLooksValid: reverseSearch.concurrencyLooksValid === true,
         }
       : undefined,
     googleVision: googleVision

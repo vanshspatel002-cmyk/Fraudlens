@@ -112,6 +112,7 @@ def feature_diagnostics() -> dict:
     google_ready = bool(google_credential or has_split_google_credentials() or google_file)
     reverse_ready = bool(reverse_key)
     reverse_fully_ready = bool(reverse_key and public_base_value and is_public_url(public_base_value))
+    web_threads = int(os.getenv("WEB_THREADS", "4") or "4")
 
     return {
         "reverseSearch": {
@@ -125,6 +126,8 @@ def feature_diagnostics() -> dict:
             "missingAnyOf": [] if reverse_ready else list(REVERSE_SEARCH_KEY_ENV_NAMES),
             "publicBaseConfiguredEnv": public_base,
             "publicBaseLooksValid": bool(public_base_value and is_public_url(public_base_value)),
+            "webThreads": web_threads,
+            "concurrencyLooksValid": web_threads >= 2,
             "missingPublicBaseAnyOf": [] if public_base else list(PUBLIC_BASE_URL_ENV_NAMES),
             "message": (
                 "Reverse search is configured."

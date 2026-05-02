@@ -62,6 +62,8 @@ export type AnalysisResult = {
       publicBaseConfiguredEnv?: string | null;
       publicBaseLooksValid?: boolean;
       missingPublicBaseAnyOf?: string[];
+      webThreads?: number;
+      concurrencyLooksValid?: boolean;
     };
     googleVision?: {
       configured: boolean;
