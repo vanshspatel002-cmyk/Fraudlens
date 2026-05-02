@@ -17,6 +17,7 @@ export type AnalysisResult = {
   aiProb: number;
   reverseSearch?: {
     available: boolean;
+    limited?: boolean;
     message: string;
     matchesFound: number;
     sources: {

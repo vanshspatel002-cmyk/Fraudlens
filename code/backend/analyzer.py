@@ -1347,7 +1347,7 @@ def build_professional_score(
             }
         )
 
-    if reverse_search.get("available") is True:
+    if reverse_search.get("available") is True and reverse_search.get("limited") is not True:
         matches_found = int(reverse_search.get("matchesFound") or 0)
 
         if matches_found >= 6:

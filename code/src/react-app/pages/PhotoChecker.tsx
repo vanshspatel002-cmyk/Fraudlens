@@ -439,8 +439,9 @@ function parseAnalysisResult(payload: unknown): ResultType {
   const reverseSearchMessage = asString(reverseSearch?.message, "");
   const reverseSearchNoResults = isReverseSearchNoResultsMessage(reverseSearchMessage);
   const parsedReverseSearch = reverseSearch
-    ? {
+      ? {
         available: reverseSearch.available === true || reverseSearchNoResults,
+        limited: reverseSearch.limited === true,
         message: reverseSearchNoResults ? "No strong online reuse detected." : reverseSearchMessage,
         matchesFound: reverseSearchNoResults ? 0 : asNumber(reverseSearch.matchesFound),
         sources: reverseSources,
@@ -1447,6 +1448,7 @@ export default function PhotoChecker() {
       : never;
   }) => {
     const isActive = reverseSearch?.available === true;
+    const isLimited = reverseSearch?.limited === true;
     const originalityScore = reverseSearch?.originalityScore;
     const sources = reverseSearch?.sources?.slice(0, 3) || [];
     const missingEnv = diagnostics?.missingAnyOf?.length
@@ -1475,7 +1477,7 @@ export default function PhotoChecker() {
                   : "border-amber-300/25 bg-amber-300/10 text-amber-200"
               }`}
             >
-              {isActive ? "Active" : "Unavailable"}
+              {isActive ? (isLimited ? "Limited" : "Active") : "Unavailable"}
             </Badge>
           </div>
         </CardHeader>

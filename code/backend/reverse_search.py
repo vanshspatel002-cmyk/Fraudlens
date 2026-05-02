@@ -82,6 +82,20 @@ def fallback(message: str) -> dict[str, Any]:
     }
 
 
+def limited_result(message: str) -> dict[str, Any]:
+    reason = message.strip().rstrip(".")
+
+    return {
+        "available": True,
+        "limited": True,
+        "message": f"Reverse image search ran with limited confidence: {reason}.",
+        "matchesFound": 0,
+        "sources": [],
+        "originalityScore": None,
+        "stockPhotoDetected": False,
+    }
+
+
 def safe_request_error(exc: Exception) -> str:
     message = str(exc).strip()
 
@@ -256,7 +270,7 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
                 continue
 
             if not response.ok:
-                return fallback(f"SerpAPI request failed with HTTP {response.status_code}")
+                return limited_result(f"SerpAPI returned HTTP {response.status_code}")
 
             payload = response.json()
             break
@@ -269,11 +283,11 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
                 continue
         except ValueError as exc:
             print(f"[reverse_search] Reverse search failed: invalid JSON: {exc}")
-            return fallback("invalid SerpAPI response")
+            return limited_result("SerpAPI returned an invalid response")
 
     if payload is None:
         reason = last_request_error or "request failed after retries"
-        return fallback(f"SerpAPI request failed after {SERPAPI_MAX_ATTEMPTS} attempts: {reason}")
+        return limited_result(f"SerpAPI request failed after {SERPAPI_MAX_ATTEMPTS} attempts: {reason}")
 
     if payload.get("error"):
         serpapi_error = str(payload["error"])
@@ -282,7 +296,7 @@ def reverse_image_search(image_path: str | Path, image_url: str | None = None) -
             print("[reverse_search] SerpAPI returned no matches; treating as completed search")
             return parse_serpapi_results({})
 
-        return fallback(serpapi_error)
+        return limited_result(serpapi_error)
 
     result = parse_serpapi_results(payload)
     print(f"SerpAPI matches parsed: {result['matchesFound']}")
