@@ -1,5 +1,6 @@
 import os
 import gc
+import traceback
 from pathlib import Path
 from uuid import uuid4
 
@@ -93,7 +94,10 @@ def prepare_analysis_image(source_path: Path, destination_path: Path) -> Path:
             (MAX_ANALYSIS_IMAGE_DIMENSION, MAX_ANALYSIS_IMAGE_DIMENSION),
             Image.Resampling.LANCZOS,
         )
-        image.save(destination_path, format="JPEG", quality=90, optimize=True)
+        try:
+            image.save(destination_path, format="JPEG", quality=88, optimize=True)
+        except OSError:
+            image.save(destination_path, format="JPEG", quality=88)
 
     return destination_path
 
@@ -328,8 +332,15 @@ def analyze():
         print("[api] analysis error:", str(e))
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        print("[api] unexpected error:", str(e))
-        return jsonify({"error": "Image analysis failed", "details": str(e)}), 500
+        traceback_summary = traceback.format_exc(limit=5)
+        print("[api] unexpected error:", traceback_summary)
+        return jsonify(
+            {
+                "error": "Image analysis failed",
+                "details": f"{e.__class__.__name__}: {e}",
+                "trace": traceback_summary,
+            }
+        ), 500
     finally:
         try:
             filepath.unlink(missing_ok=True)

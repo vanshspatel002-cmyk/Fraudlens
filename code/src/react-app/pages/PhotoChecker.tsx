@@ -630,7 +630,11 @@ export default function PhotoChecker() {
       const payload = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(payload?.error || "Image analysis failed");
+        const backendMessage = [payload?.error, payload?.details]
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .join(": ");
+
+        throw new Error(backendMessage || "Image analysis failed");
       }
 
       backendData = parseAnalysisResult(payload);
